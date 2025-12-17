@@ -1,11 +1,11 @@
 services:
   photoframe:
-    # OPTION 1: Build from GitHub (Current Default)
-    # This will fetch and build the code directly from your repo
-    build: https://github.com/Botched/PhotoFrameUI.git#main
+    # OPTION 1: Pre-built Image (BEST for Private Repos & Dockge)
+    # Run 'docker login ghcr.io' on your server first.
+    image: ghcr.io/botched/photoframeui:latest
 
-    # OPTION 2: Use Pre-built Image (Fastest - Recommended once GitHub Action finishes)
-    # image: ghcr.io/botched/photoframeui:latest
+    # OPTION 2: Build from GitHub (Only works for PUBLIC repos)
+    # build: https://github.com/Botched/PhotoFrameUI.git#main
 
     # OPTION 3: Build from local files (Best for development)
     # build: .
