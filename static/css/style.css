@@ -244,10 +244,7 @@ body.frame-mode {
     background: #000;
     overflow: hidden;
     cursor: none;
-    /* Hide cursor by default */
 }
-
-/* Show cursor when moving (handled by simple JS if desired, or relying on OS kiosk mode) */
 
 #frame-container {
     width: 100vw;
@@ -341,9 +338,98 @@ body.frame-mode {
     opacity: 0;
 }
 
-/* Mobile/Touch optimizations */
+.settings-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.header-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.selection-toolbar {
+    margin-bottom: 20px;
+    padding: 15px;
+    display: none;
+    /* Controlled by JS */
+    align-items: center;
+    justify-content: space-between;
+}
+
+.selection-info,
+.selection-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+/* Mobile Viewport Updates */
 @media (max-width: 768px) {
+    .container {
+        padding: 15px;
+    }
+
+    header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 20px;
+    }
+
+    .header-actions {
+        width: 100%;
+        flex-direction: column;
+    }
+
+    .header-actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .settings-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .selection-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 15px;
+    }
+
+    .selection-info {
+        justify-content: space-between;
+    }
+
+    .selection-actions {
+        flex-direction: column;
+    }
+
+    .selection-actions input {
+        width: 100%;
+    }
+
+    .selection-actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
     .photo-grid {
         grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 10px;
+    }
+
+    .upload-zone {
+        padding: 40px 20px;
+    }
+
+    h1 {
+        font-size: 20px;
+    }
+
+    .disabled-label {
+        font-size: 14px;
+        letter-spacing: 1px;
+        padding: 2px 8px;
     }
 }
