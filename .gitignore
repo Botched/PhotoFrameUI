@@ -12,3 +12,6 @@ venv.bak/
 .vscode/
 data/photos/*
 !data/photos/.gitkeep
+
+static/uploads/*
+!static/uploads/.gitkeep
