@@ -302,7 +302,7 @@ function renderGallery() {
                     <div class="bottom-actions" style="display:flex; gap:5px; width:100%; justify-content: center;">
                         <button class="btn btn-danger btn-sm delete-btn" title="Delete">🗑️</button>
                         <button class="btn btn-sm toggle-btn" title="${photo.active ? 'Hide from Frame' : 'Show in Frame'}">
-                            ${photo.active ? 'Hide' : 'Show'}
+                            ${photo.active ? '🔴' : '🟢'}
                         </button>
                     </div>
                 </div>`;
