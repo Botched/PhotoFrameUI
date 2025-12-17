@@ -194,15 +194,40 @@ h1 {
     flex-direction: column;
     justify-content: space-between;
     padding: 10px;
-    pointer-events: none;
+    pointer-events: none !important;
     /* Block clicks when hidden */
+    z-index: 10;
 }
 
+/* Explicit activation (Selection or Mobile Tap) */
 .photo-card.active .photo-overlay,
 .photo-card.selected .photo-overlay {
     opacity: 1;
+    pointer-events: auto !important;
+}
+
+/* On Desktop (devices with hover) */
+@media (hover: hover) {
+    .photo-card:hover .photo-overlay {
+        opacity: 1;
+        pointer-events: auto !important;
+    }
+}
+
+/* Double safety: Buttons inside shouldn't capture clicks unless parent is active/hovered */
+.photo-overlay button {
+    pointer-events: none;
+}
+
+.photo-card.active .photo-overlay button,
+.photo-card.selected .photo-overlay button {
     pointer-events: auto;
-    /* Enable clicks when visible */
+}
+
+@media (hover: hover) {
+    .photo-card:hover .photo-overlay button {
+        pointer-events: auto;
+    }
 }
 
 .rotate-btn {
@@ -211,11 +236,6 @@ h1 {
 
 .bottom-actions {
     margin-top: auto;
-}
-
-.photo-card:hover .photo-overlay {
-    opacity: 1;
-    pointer-events: auto;
 }
 
 .photo-card.selected {
