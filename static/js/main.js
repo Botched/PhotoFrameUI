@@ -310,8 +310,10 @@ function renderGallery() {
 
             // Append a timestamp to force browser to reload image after rotation
             const t = photo.added ? `?t=${photo.added}` : '';
+            const disabledLabel = !photo.active ? '<div class="disabled-label">DISABLED</div>' : '';
             card.innerHTML = `
                 <img src="/static/uploads/${photo.filename}${t}" loading="lazy">
+                ${disabledLabel}
                 ${overlayContent}
             `;
             

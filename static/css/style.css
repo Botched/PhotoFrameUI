@@ -210,9 +210,33 @@ h1 {
     box-shadow: 0 0 0 2px var(--accent-color);
 }
 
-.photo-card.hidden-item {
-    opacity: 0.5;
+.photo-card.hidden-item img {
+    opacity: 0.3;
     filter: grayscale(1);
+}
+
+.photo-card.hidden-item:hover img {
+    opacity: 0.6;
+    filter: grayscale(0.5);
+}
+
+.disabled-label {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: rgba(255, 255, 255, 0.4);
+    font-weight: 800;
+    font-size: 18px;
+    letter-spacing: 3px;
+    pointer-events: none;
+    text-transform: uppercase;
+    z-index: 1;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 4px 12px;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.2);
 }
 
 /* Frame Mode Specifics */
