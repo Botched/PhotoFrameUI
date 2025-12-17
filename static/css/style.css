@@ -249,6 +249,10 @@ body.frame-mode {
     transform: translateX(0);
 }
 
+.frame-image.tx-slide.exit {
+    transform: translateX(-100%);
+}
+
 .frame-image.tx-zoom {
     transform: scale(1.2);
     transition: transform 5s ease-out, opacity 1s ease-in-out;
@@ -256,6 +260,11 @@ body.frame-mode {
 
 .frame-image.tx-zoom.active {
     transform: scale(1);
+}
+
+.frame-image.tx-zoom.exit {
+    transform: scale(1.1);
+    opacity: 0;
 }
 
 .frame-image.tx-blur {
@@ -267,6 +276,11 @@ body.frame-mode {
     filter: blur(0);
 }
 
+.frame-image.tx-blur.exit {
+    filter: blur(40px);
+    opacity: 0;
+}
+
 .frame-image.tx-flip {
     transform: rotateY(180deg) scale(0.5);
     transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1), opacity 1s ease-in-out;
@@ -276,6 +290,11 @@ body.frame-mode {
     transform: rotateY(0) scale(1);
 }
 
+.frame-image.tx-flip.exit {
+    transform: rotateY(-180deg) scale(0.5);
+    opacity: 0;
+}
+
 .frame-image.tx-revolve {
     transform: rotate(15deg) scale(1.1);
     transition: transform 1s ease-out, opacity 1s ease-in-out;
@@ -283,6 +302,11 @@ body.frame-mode {
 
 .frame-image.tx-revolve.active {
     transform: rotate(0) scale(1);
+}
+
+.frame-image.tx-revolve.exit {
+    transform: rotate(-15deg) scale(0.9);
+    opacity: 0;
 }
 
 /* Mobile/Touch optimizations */

@@ -117,8 +117,13 @@ function showNextPhoto() {
         // Animate in
         img.classList.add('active');
         
-        // Clean up old images
+        // Clean up old images: Transition them OUT while new one comes IN
         const oldImages = container.querySelectorAll('.frame-image:not(:last-child)');
+        oldImages.forEach(el => {
+            el.classList.remove('active');
+            el.classList.add('exit');
+        });
+
         setTimeout(() => {
             oldImages.forEach(el => el.remove());
         }, 1000); // 1s transition duration matches CSS
