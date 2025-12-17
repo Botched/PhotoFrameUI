@@ -318,6 +318,23 @@ function renderGallery() {
             `;
             
             if (!isSelectMode) {
+                // Tap to show overlay logic (important for mobile)
+                card.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    // Toggle active on this card, remove from others
+                    const wasActive = card.classList.contains('active');
+                    document.querySelectorAll('.photo-card.active').forEach(c => c.classList.remove('active'));
+                    if (!wasActive) card.classList.add('active');
+                });
+
+                // Global click to dismiss overlays
+                if (!document._overlayListenerAdded) {
+                    document.addEventListener('click', () => {
+                        document.querySelectorAll('.photo-card.active').forEach(c => c.classList.remove('active'));
+                    });
+                    document._overlayListenerAdded = true;
+                }
+
                 // Event Listeners (Normal Mode)
                 const delBtn = card.querySelector('.delete-btn');
                 delBtn.addEventListener('click', async (e) => {

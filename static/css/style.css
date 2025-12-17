@@ -194,6 +194,15 @@ h1 {
     flex-direction: column;
     justify-content: space-between;
     padding: 10px;
+    pointer-events: none;
+    /* Block clicks when hidden */
+}
+
+.photo-card.active .photo-overlay,
+.photo-card.selected .photo-overlay {
+    opacity: 1;
+    pointer-events: auto;
+    /* Enable clicks when visible */
 }
 
 .rotate-btn {
@@ -204,9 +213,9 @@ h1 {
     margin-top: auto;
 }
 
-.photo-card.selected .photo-overlay,
 .photo-card:hover .photo-overlay {
     opacity: 1;
+    pointer-events: auto;
 }
 
 .photo-card.selected {
