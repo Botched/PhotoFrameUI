@@ -298,11 +298,13 @@ function renderGallery() {
                 // Normal Mode Overlay
                 overlayContent = `
                 <div class="photo-overlay">
-                    <button class="btn btn-sm rotate-btn" style="margin-right:auto;" title="Rotate 90°">⟳</button>
-                    <button class="btn btn-danger btn-sm delete-btn" title="Delete">🗑️</button>
-                    <button class="btn btn-sm toggle-btn" style="margin-left:5px;" title="${photo.active ? 'Hide from Frame' : 'Show in Frame'}">
-                        ${photo.active ? '👁️' : '🚫'}
-                    </button>
+                    <button class="btn btn-sm rotate-btn" title="Rotate 90°">⟳</button>
+                    <div class="bottom-actions" style="display:flex; gap:5px; width:100%; justify-content: flex-end;">
+                        <button class="btn btn-danger btn-sm delete-btn" title="Delete">🗑️</button>
+                        <button class="btn btn-sm toggle-btn" title="${photo.active ? 'Hide from Frame' : 'Show in Frame'}">
+                            ${photo.active ? '👁️' : '🚫'}
+                        </button>
+                    </div>
                 </div>`;
             }
 
