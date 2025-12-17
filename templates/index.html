@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Frame Dashboard</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>Photo Frame</h1>
+            <div style="display: flex; gap: 10px;">
+                <a href="/frame" class="btn" target="_blank">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z">
+                        </path>
+                    </svg>
+                    Open Frame
+                </a>
+                <button id="settings-btn" class="btn">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
+                        </path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    Settings
+                </button>
+                <button id="import-google-btn" class="btn">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z">
+                        </path>
+                    </svg>
+                    Google Photos
+                </button>
+            </div>
+        </header>
+
+        <!-- Hidden Settings Panel -->
+        <div id="settings-panel" class="glass-panel" style="display:none; margin-bottom: 30px;">
+            <h2 style="margin-top:0;">Configuration</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div>
+                    <label style="display:block; margin-bottom:8px;">Slideshow Duration (Seconds)</label>
+                    <input type="number" id="setting-rotation" class="glass-input"
+                        style="width:100%; padding:10px; background:rgba(0,0,0,0.3); border:1px solid #444; color:#fff; border-radius:8px;">
+                </div>
+                <div>
+                    <label style="display:block; margin-bottom:8px;">Transition Effect</label>
+                    <select id="setting-transition"
+                        style="width:100%; padding:10px; background:rgba(0,0,0,0.3); border:1px solid #444; color:#fff; border-radius:8px;">
+                        <option value="fade">Fade</option>
+                        <option value="slide">Slide</option>
+                        <option value="zoom">Zoom</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="margin-top:20px;">
+                <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+                    <input type="checkbox" id="setting-sleep-enabled">
+                    <strong>Enable Sleep Schedule</strong> (Screen goes black)
+                </label>
+                <div id="sleep-times" style="margin-top:15px; display:flex; gap:20px; opacity:0.5;">
+                    <div>
+                        <label>Sleep Start</label>
+                        <input type="time" id="setting-sleep-start"
+                            style="background:rgba(0,0,0,0.3); border:1px solid #444; color:#fff; border-radius:8px; padding:5px;">
+                    </div>
+                    <div>
+                        <label>Wake Up</label>
+                        <input type="time" id="setting-sleep-end"
+                            style="background:rgba(0,0,0,0.3); border:1px solid #444; color:#fff; border-radius:8px; padding:5px;">
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top:20px; text-align:right;">
+                <button id="save-settings-btn" class="btn btn-primary">Save Changes</button>
+            </div>
+        </div>
+
+        <div id="upload-area" class="upload-area">
+            <div class="upload-zone" id="drop-zone">
+                <div class="upload-icon">☁️</div>
+                <h3>Drag & Drop photos here</h3>
+                <p style="color:#888;">or click to browse</p>
+                <input type="file" id="file-input" multiple accept="image/*" style="display:none;">
+            </div>
+            <!-- Upload Progress -->
+            <div id="upload-queue" style="margin-bottom: 20px;"></div>
+        </div>
+
+        <!-- Selection Toolbar -->
+        <div id="selection-toolbar" class="glass-panel"
+            style="margin-bottom:20px; padding:15px; display:none; align-items:center; justify-content:space-between;">
+            <div style="display:flex; align-items:center; gap:15px;">
+                <strong><span id="selected-count">0</span> Selected</strong>
+                <button class="btn btn-sm" id="cancel-selection">Cancel</button>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <input type="text" id="new-folder-name" placeholder="New or existing folder..."
+                    style="background:rgba(0,0,0,0.3); border:1px solid #444; color:#fff; border-radius:8px; padding:5px 10px;">
+                <button class="btn btn-primary btn-sm" id="move-selected-btn">Move to Folder</button>
+            </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+            <h2 style="margin:0;">Gallery <span id="photo-count"
+                    style="font-size: 14px; opacity: 0.5; font-weight:normal;"></span></h2>
+            <button id="toggle-select-mode" class="btn">Select Photos</button>
+        </div>
+
+        <div id="photo-grid" class="photo-grid">
+            <!-- Photos will be injected here -->
+        </div>
+    </div>
+
+    <!-- Google Photos Modal -->
+    <div id="google-modal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000; align-items:center; justify-content:center;">
+        <div class="glass-panel"
+            style="width:80%; max-width:900px; max-height:85vh; display:flex; flex-direction:column; padding:0; overflow:hidden;">
+            <div
+                style="padding:20px; border-bottom:1px solid var(--glass-border); display:flex; justify-content:space-between; align-items:center;">
+                <h2 style="margin:0;">Import from Google Photos</h2>
+                <button id="close-google-modal" class="btn btn-sm">Close</button>
+            </div>
+
+            <div id="google-content" style="padding:20px; overflow-y:auto; flex-grow:1;">
+                <div id="google-login-state" style="text-align:center; padding:50px;">
+                    <p>Connect your Google Account to access your photos.</p>
+                    <button id="google-login-btn" class="btn btn-primary">Connect Google Account</button>
+                </div>
+
+                <div id="google-photos-list"
+                    style="display:none; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap:10px;">
+                    <!-- Items -->
+                </div>
+            </div>
+
+            <div id="google-footer"
+                style="padding:20px; border-top:1px solid var(--glass-border); display:none; justify-content:flex-end; gap:15px; align-items:center;">
+                <span id="google-selected-count">0 selected</span>
+                <button id="google-import-confirm-btn" class="btn btn-primary">Import Selected</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/main.js"></script>
+</body>
+
+</html>

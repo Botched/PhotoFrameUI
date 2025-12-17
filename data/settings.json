@@ -1,0 +1,7 @@
+{
+    "rotation_speed": 2,
+    "transition": "fade",
+    "sleep_enabled": false,
+    "sleep_start": "22:00",
+    "sleep_end": "08:00"
+}
