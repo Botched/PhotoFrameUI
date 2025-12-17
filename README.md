@@ -9,14 +9,26 @@ Features a glassmorphic UI, sleep timer, drag-drop uploads, and smooth slideshow
 - **Configurable**: Adjust slideshow speed, transitions, and sleep schedule.
 - **Touch Friendly**: Large buttons and responsive layout.
 
-## Installation
+## Docker Installation (Recommended)
+
+This is the easiest way to run the application on any system, including Raspberry Pi.
+
+1. **Pre-requisites**: Install [Docker](https://docs.docker.com/get-docker/) and [Docker Compose](https://docs.docker.com/compose/install/).
+2. **Run the App**:
+   ```bash
+   docker-compose up -d
+   ```
+The app will be available at `http://localhost:5000`. 
+- **Persistance**: Photos and settings are saved in the local `./data` and `./static/uploads` directories.
+
+## Manual Installation
 1. Install Python 3.
 2. Install dependencies:
    ```bash
    pip install -r requirements.txt
    ```
 
-## Running the App
+## Running the App Manually
 Run the server:
 ```bash
 python app.py

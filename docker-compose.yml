@@ -1,0 +1,9 @@
+services:
+  photoframe:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./data:/app/data
+      - ./static/uploads:/app/static/uploads
+    restart: unless-stopped
