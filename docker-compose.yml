@@ -1,10 +1,14 @@
 services:
   photoframe:
-    # Build from local files (Best for development)
-    build: .
-    
-    # OR: Build directly from GitHub (Best for remote deployment/Pi)
-    # build: https://github.com/Botched/PhotoFrameUI.git#main
+    # OPTION 1: Build from GitHub (Current Default)
+    # This will fetch and build the code directly from your repo
+    build: https://github.com/Botched/PhotoFrameUI.git#main
+
+    # OPTION 2: Use Pre-built Image (Fastest - Recommended once GitHub Action finishes)
+    # image: ghcr.io/botched/photoframeui:latest
+
+    # OPTION 3: Build from local files (Best for development)
+    # build: .
     ports:
       - "5000:5000"
     volumes:
