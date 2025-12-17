@@ -2,7 +2,6 @@ document.addEventListener('DOMContentLoaded', () => {
     loadPhotos();
     loadSettings();
     setupUpload();
-    setupUpload();
     setupSettingsUI();
     setupGoogleImport();
 });
@@ -412,6 +411,59 @@ function readAllEntries(reader) {
     });
 }
 
+async function uploadFiles(files) {
+    const queue = document.getElementById('upload-queue');
+    queue.innerHTML = '';
+    
+    for (const file of files) {
+        const item = document.createElement('div');
+        item.style.padding = '8px';
+        item.style.marginBottom = '5px';
+        item.style.background = 'rgba(255,255,255,0.05)';
+        item.style.borderRadius = '4px';
+        item.innerText = `Preparing ${file.name}...`;
+        queue.appendChild(item);
+
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        // Use path if available (from directory picker or drag-drop)
+        if (file.fullPath) {
+            formData.append('path', file.fullPath.substring(0, file.fullPath.lastIndexOf('/')));
+        } else if (file.webkitRelativePath) {
+            formData.append('path', file.webkitRelativePath.substring(0, file.webkitRelativePath.lastIndexOf('/')));
+        }
+
+        try {
+            const res = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            if (data.success) {
+                item.innerText = `✓ ${file.name} uploaded`;
+                item.style.color = '#4ade80';
+            } else {
+                item.innerText = `✗ ${file.name} failed: ${data.error}`;
+                item.style.color = '#f87171';
+            }
+        } catch (e) {
+            item.innerText = `✗ ${file.name} upload error`;
+            item.style.color = '#f87171';
+        }
+    }
+    
+    setTimeout(() => {
+        queue.innerHTML = '';
+        loadPhotos();
+    }, 3000);
+}
+
+function handleFiles(fileList) {
+    // Convert FileList to Array
+    uploadFiles(Array.from(fileList));
+}
+
 function getFileFromEntry(entry) {
     return new Promise((resolve) => {
         entry.file((file) => {
@@ -424,10 +476,6 @@ function getFileFromEntry(entry) {
     });
 }
 
-function handleFiles(fileList) {
-    // Convert FileList to Array
-    uploadFiles(Array.from(fileList));
-}
 
 // --- Google Photos Logic ---
 let googleSelected = new Set();
