@@ -1,6 +1,10 @@
 services:
   photoframe:
+    # Build from local files (Best for development)
     build: .
+    
+    # OR: Build directly from GitHub (Best for remote deployment/Pi)
+    # build: https://github.com/Botched/PhotoFrameUI.git#main
     ports:
       - "5000:5000"
     volumes:
