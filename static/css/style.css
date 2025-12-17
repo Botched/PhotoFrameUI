@@ -120,6 +120,7 @@ h1 {
     letter-spacing: -0.5px;
     margin: 0;
     background: linear-gradient(to right, #fff, #a5a5a5);
+    background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
@@ -249,12 +250,39 @@ body.frame-mode {
 }
 
 .frame-image.tx-zoom {
-    transform: scale(1.1);
+    transform: scale(1.2);
     transition: transform 5s ease-out, opacity 1s ease-in-out;
 }
 
 .frame-image.tx-zoom.active {
     transform: scale(1);
+}
+
+.frame-image.tx-blur {
+    filter: blur(20px);
+    transition: filter 1s ease-in-out, opacity 1s ease-in-out;
+}
+
+.frame-image.tx-blur.active {
+    filter: blur(0);
+}
+
+.frame-image.tx-flip {
+    transform: rotateY(180deg) scale(0.5);
+    transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1), opacity 1s ease-in-out;
+}
+
+.frame-image.tx-flip.active {
+    transform: rotateY(0) scale(1);
+}
+
+.frame-image.tx-revolve {
+    transform: rotate(15deg) scale(1.1);
+    transition: transform 1s ease-out, opacity 1s ease-in-out;
+}
+
+.frame-image.tx-revolve.active {
+    transform: rotate(0) scale(1);
 }
 
 /* Mobile/Touch optimizations */

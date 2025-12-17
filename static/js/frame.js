@@ -15,6 +15,13 @@ let lastPhotoFetch = 0;
     setInterval(refreshData, 60000);
     // Check sleep every minute
     setInterval(checkSleep, 60000);
+
+    // Tap to advance
+    container.addEventListener('click', () => {
+        if (sleepOverlay.style.display === 'block') return;
+        if (loopTimeout) clearTimeout(loopTimeout);
+        showNextPhoto();
+    });
 })();
 
 async function refreshData() {
@@ -91,8 +98,12 @@ function showNextPhoto() {
     
     // Apply transition class
     const transitionType = settings?.transition || 'fade';
-    const transitionClass = transitionType === 'slide' ? 'tx-slide' : 
-                          transitionType === 'zoom' ? 'tx-zoom' : '';
+    let transitionClass = '';
+    if (transitionType === 'slide') transitionClass = 'tx-slide';
+    else if (transitionType === 'zoom') transitionClass = 'tx-zoom';
+    else if (transitionType === 'blur') transitionClass = 'tx-blur';
+    else if (transitionType === 'flip') transitionClass = 'tx-flip';
+    else if (transitionType === 'revolve') transitionClass = 'tx-revolve';
                           
     img.className = `frame-image ${transitionClass}`;
     

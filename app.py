@@ -126,9 +126,14 @@ def upload_file():
     if file:
         # Handle folder structure if provided
         rel_path = request.form.get('path', '')
-        # Sanitize path components
-        safe_path_parts = [secure_filename(p) for p in rel_path.split('/') if p and p != '.']
-        safe_rel_path = os.path.join(*safe_path_parts) if safe_path_parts else ''
+        # Sanitize path components (allowing spaces)
+        def custom_secure_path(path):
+            # Remove leading/trailing dots and slashes, allow spaces and alphanumeric
+            import re
+            parts = [re.sub(r'[^a-zA-Z0-9 \-_]', '', p).strip() for p in path.split('/') if p and p != '.']
+            return os.path.join(*parts) if parts else ''
+        
+        safe_rel_path = custom_secure_path(rel_path)
         
         target_dir = os.path.join(app.config['UPLOAD_FOLDER'], safe_rel_path)
         os.makedirs(target_dir, exist_ok=True)
@@ -186,9 +191,10 @@ def delete_folder():
     if folder_path == '.' or not folder_path:
         return jsonify({'error': 'Cannot delete root folder'}), 400
 
-    # Safety: clean path
-    safe_path_parts = [secure_filename(p) for p in folder_path.split('/') if p and p != '.']
-    safe_rel_path = os.path.join(*safe_path_parts)
+    # Safety: clean path (allowing spaces)
+    import re
+    parts = [re.sub(r'[^a-zA-Z0-9 \-_]', '', p).strip() for p in folder_path.split('/') if p and p != '.']
+    safe_rel_path = os.path.join(*parts) if parts else ''
     
     upload_root = os.path.abspath(app.config['UPLOAD_FOLDER'])
     target_path = os.path.abspath(os.path.join(upload_root, safe_rel_path))
@@ -216,8 +222,9 @@ def move_photos():
     if target_folder == '.' or target_folder == '':
          safe_target_rel = ''
     else:
-        safe_parts = [secure_filename(p) for p in target_folder.split('/') if p and p != '.']
-        safe_target_rel = os.path.join(*safe_parts)
+        import re
+        parts = [re.sub(r'[^a-zA-Z0-9 \-_]', '', p).strip() for p in target_folder.split('/') if p and p != '.']
+        safe_target_rel = os.path.join(*parts) if parts else ''
     
     upload_root = os.path.abspath(app.config['UPLOAD_FOLDER'])
     abs_target_dir = os.path.join(upload_root, safe_target_rel)
