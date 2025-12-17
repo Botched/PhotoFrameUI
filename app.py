@@ -444,6 +444,43 @@ def handle_settings():
     else:
         return jsonify(load_settings())
 
+@app.route('/api/photo/rotate', methods=['POST'])
+def rotate_photo():
+    data = request.json
+    filename = data.get('filename')
+    degrees = data.get('degrees', 90) # Default 90 clockwise
+    
+    if not filename:
+        return jsonify({'error': 'No filename provided'}), 400
+        
+    upload_root = os.path.abspath(app.config['UPLOAD_FOLDER'])
+    target_path = os.path.abspath(os.path.join(upload_root, filename))
+    
+    # Jail check
+    if not target_path.startswith(upload_root):
+        return jsonify({'error': 'Invalid path'}), 403
+        
+    if not os.path.exists(target_path):
+        return jsonify({'error': 'File not found'}), 404
+        
+    try:
+        from PIL import Image
+        with Image.open(target_path) as img:
+            # Rotate negative degrees for clockwise rotation in PIL
+            rotated = img.rotate(-degrees, expand=True)
+            rotated.save(target_path)
+            
+        # Update metadata timestamp to force browser cache refresh
+        meta = load_photos_meta()
+        if filename in meta:
+            meta[filename]['added'] = time.time()
+            save_photos_meta(meta)
+            
+        return jsonify({'success': True})
+    except Exception as e:
+        print(f"Rotation error: {e}")
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     # Run on all interfaces so it's accessible on network
     app.run(host='0.0.0.0', port=5000, debug=True)

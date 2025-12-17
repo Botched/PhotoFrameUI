@@ -70,6 +70,15 @@ async function movePhotos(filenames, targetFolder) {
     return await res.json();
 }
 
+async function rotatePhoto(filename, degrees = 90) {
+    const res = await fetch('/api/photo/rotate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename, degrees })
+    });
+    return await res.json();
+}
+
 // --- UI Logic ---
 async function loadPhotos() {
     allPhotos = await fetchPhotos();
@@ -289,6 +298,7 @@ function renderGallery() {
                 // Normal Mode Overlay
                 overlayContent = `
                 <div class="photo-overlay">
+                    <button class="btn btn-sm rotate-btn" style="margin-right:auto;" title="Rotate 90°">⟳</button>
                     <button class="btn btn-danger btn-sm delete-btn" title="Delete">🗑️</button>
                     <button class="btn btn-sm toggle-btn" style="margin-left:5px;" title="${photo.active ? 'Hide from Frame' : 'Show in Frame'}">
                         ${photo.active ? '👁️' : '🚫'}
@@ -296,8 +306,10 @@ function renderGallery() {
                 </div>`;
             }
 
+            // Append a timestamp to force browser to reload image after rotation
+            const t = photo.added ? `?t=${photo.added}` : '';
             card.innerHTML = `
-                <img src="/static/uploads/${photo.filename}" loading="lazy">
+                <img src="/static/uploads/${photo.filename}${t}" loading="lazy">
                 ${overlayContent}
             `;
             
@@ -322,6 +334,14 @@ function renderGallery() {
                             delBtn.classList.remove('btn-primary');
                         }, 5000);
                     }
+                });
+
+                const rotateBtn = card.querySelector('.rotate-btn');
+                rotateBtn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    rotateBtn.innerText = '...';
+                    await rotatePhoto(photo.filename);
+                    loadPhotos();
                 });
 
                 const toggleBtn = card.querySelector('.toggle-btn');
