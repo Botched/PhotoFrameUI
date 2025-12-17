@@ -13,6 +13,10 @@
     --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+* {
+    box-sizing: border-box;
+}
+
 body {
     margin: 0;
     padding: 0;
@@ -384,7 +388,9 @@ body.frame-mode {
 
     .header-actions .btn {
         width: 100%;
+        display: flex;
         justify-content: center;
+        text-decoration: none;
     }
 
     .settings-grid {
