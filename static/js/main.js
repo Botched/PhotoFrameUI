@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
+    setupLazyLoading();
     loadPhotos();
     loadSettings();
     setupUpload();
@@ -11,6 +12,31 @@ let allPhotos = [];
 let currentSettings = {};
 let isSelectMode = false;
 let selectedPhotos = new Set();
+let imageObserver = null;
+
+// --- Lazy Loading ---
+function setupLazyLoading() {
+    if ('IntersectionObserver' in window) {
+        imageObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const img = entry.target;
+                    const src = img.dataset.src;
+                    if (src) {
+                        img.src = src;
+                        img.removeAttribute('data-src');
+                        img.classList.remove('lazy');
+                        img.classList.add('loaded');
+                    }
+                    observer.unobserve(img);
+                }
+            });
+        }, {
+            rootMargin: '100px 0px',  // Preload 100px before visible
+            threshold: 0.01
+        });
+    }
+}
 
 // --- API Calls ---
 async function fetchPhotos() {
@@ -311,8 +337,16 @@ function renderGallery() {
             // Append a timestamp to force browser to reload image after rotation
             const t = photo.added ? `?t=${photo.added}` : '';
             const disabledLabel = !photo.active ? '<div class="disabled-label">DISABLED</div>' : '';
+            const imgSrc = `/static/uploads/${photo.filename}${t}`;
+
+            // Use lazy loading with Intersection Observer if available
+            const placeholder = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E";
+            const imgHtml = imageObserver
+                ? `<img class="lazy" data-src="${imgSrc}" src="${placeholder}">`
+                : `<img src="${imgSrc}" loading="lazy">`;
+
             card.innerHTML = `
-                <img src="/static/uploads/${photo.filename}${t}" loading="lazy">
+                ${imgHtml}
                 ${disabledLabel}
                 ${overlayContent}
             `;
@@ -374,8 +408,16 @@ function renderGallery() {
             }
 
             groupContainer.appendChild(card);
+
+            // Register with lazy loading observer
+            if (imageObserver) {
+                const img = card.querySelector('img.lazy');
+                if (img) {
+                    imageObserver.observe(img);
+                }
+            }
         });
-        
+
         // Append container to main grid
         // Since grid is CSS grid, 'display: contents' makes children direct grid items
         grid.appendChild(groupContainer);

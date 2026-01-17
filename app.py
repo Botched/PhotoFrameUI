@@ -3,6 +3,7 @@ import json
 import time
 import uuid
 from flask import Flask, render_template, request, jsonify, send_from_directory
+from flask_socketio import SocketIO, emit
 from werkzeug.utils import secure_filename
 import shutil
 import requests
@@ -22,6 +23,10 @@ app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = os.path.join('static', 'uploads')
 app.config['DATA_FOLDER'] = 'data'
 app.config['MAX_CONTENT_LENGTH'] = 32 * 1024 * 1024  # 32MB max upload
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'photo-frame-secret-key')
+
+# Initialize SocketIO
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 
 # Ensure directories exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -51,6 +56,7 @@ def load_settings():
 def save_settings(settings):
     with open(SETTINGS_FILE, 'w') as f:
         json.dump(settings, f, indent=4)
+    broadcast_update('settings_changed')
 
 def load_photos_meta():
     if not os.path.exists(PHOTOS_META_FILE):
@@ -64,6 +70,11 @@ def load_photos_meta():
 def save_photos_meta(meta):
     with open(PHOTOS_META_FILE, 'w') as f:
         json.dump(meta, f, indent=4)
+    broadcast_update('photos_changed')
+
+def broadcast_update(event_type, data=None):
+    """Broadcast update to all connected frame clients."""
+    socketio.emit(event_type, data or {}, namespace='/frame')
 
 def sync_photos():
     """Scan upload folder recursively and sync with metadata"""
@@ -481,6 +492,26 @@ def rotate_photo():
         print(f"Rotation error: {e}")
         return jsonify({'error': str(e)}), 500
 
+# --- WebSocket Handlers ---
+
+@socketio.on('connect', namespace='/frame')
+def handle_frame_connect():
+    print("Frame client connected")
+
+@socketio.on('disconnect', namespace='/frame')
+def handle_frame_disconnect():
+    print("Frame client disconnected")
+
+@socketio.on('request_sync', namespace='/frame')
+def handle_sync_request():
+    """Frame requests full data sync."""
+    meta = sync_photos()
+    photos = sorted(meta.values(), key=lambda x: x.get('added', 0), reverse=True)
+    active_photos = [p for p in photos if p.get('active', True)]
+    settings = load_settings()
+    emit('full_sync', {'photos': active_photos, 'settings': settings})
+
+
 if __name__ == '__main__':
     # Run on all interfaces so it's accessible on network
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    socketio.run(app, host='0.0.0.0', port=5000, debug=True)

@@ -1,4 +1,7 @@
 flask
+flask-socketio
+python-socketio
+eventlet
 google-api-python-client
 google-auth-oauthlib
 requests
