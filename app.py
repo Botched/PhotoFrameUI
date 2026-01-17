@@ -32,6 +32,16 @@ JPEG_QUALITY = 85  # Compression quality for uploads
 THUMBNAIL_SIZE = (300, 300)  # Max thumbnail dimensions
 THUMBNAIL_QUALITY = 80  # Compression quality for thumbnails
 
+# Thumbnail generation progress tracking
+thumbnail_generation_status = {
+    'running': False,
+    'total': 0,
+    'processed': 0,
+    'success': 0,
+    'failed': 0,
+    'current_file': ''
+}
+
 # Initialize SocketIO
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 
@@ -609,6 +619,109 @@ def rotate_photo():
     except Exception as e:
         print(f"Rotation error: {e}")
         return jsonify({'error': str(e)}), 500
+
+# --- Thumbnail Migration API ---
+
+@app.route('/api/thumbnails/status', methods=['GET'])
+def get_thumbnail_status():
+    """Get status of thumbnails - how many exist vs missing."""
+    meta = load_photos_meta()
+    upload_root = app.config['UPLOAD_FOLDER']
+    thumb_root = app.config['THUMBNAIL_FOLDER']
+
+    total = 0
+    missing = 0
+    missing_files = []
+
+    for filename in meta.keys():
+        source_path = os.path.join(upload_root, filename)
+        thumb_path = os.path.join(thumb_root, filename)
+
+        if os.path.exists(source_path):
+            total += 1
+            if not os.path.exists(thumb_path):
+                missing += 1
+                missing_files.append(filename)
+
+    return jsonify({
+        'total': total,
+        'existing': total - missing,
+        'missing': missing,
+        'generation': thumbnail_generation_status
+    })
+
+
+@app.route('/api/thumbnails/generate', methods=['POST'])
+def start_thumbnail_generation():
+    """Start background thumbnail generation for missing thumbnails."""
+    global thumbnail_generation_status
+
+    if thumbnail_generation_status['running']:
+        return jsonify({'error': 'Generation already in progress'}), 409
+
+    # Get list of missing thumbnails
+    meta = load_photos_meta()
+    upload_root = app.config['UPLOAD_FOLDER']
+    thumb_root = app.config['THUMBNAIL_FOLDER']
+
+    missing_files = []
+    for filename in meta.keys():
+        source_path = os.path.join(upload_root, filename)
+        thumb_path = os.path.join(thumb_root, filename)
+        if os.path.exists(source_path) and not os.path.exists(thumb_path):
+            missing_files.append(filename)
+
+    if not missing_files:
+        return jsonify({'message': 'No missing thumbnails', 'count': 0})
+
+    # Reset status
+    thumbnail_generation_status = {
+        'running': True,
+        'total': len(missing_files),
+        'processed': 0,
+        'success': 0,
+        'failed': 0,
+        'current_file': ''
+    }
+
+    # Start background task using eventlet
+    import eventlet
+    eventlet.spawn(run_thumbnail_generation, missing_files)
+
+    return jsonify({
+        'message': 'Generation started',
+        'count': len(missing_files)
+    })
+
+
+def run_thumbnail_generation(missing_files):
+    """Background task to generate thumbnails."""
+    global thumbnail_generation_status
+    upload_root = app.config['UPLOAD_FOLDER']
+
+    for filename in missing_files:
+        thumbnail_generation_status['current_file'] = filename
+        source_path = os.path.join(upload_root, filename)
+
+        try:
+            result = generate_thumbnail(source_path, filename)
+            if result:
+                thumbnail_generation_status['success'] += 1
+            else:
+                thumbnail_generation_status['failed'] += 1
+        except Exception as e:
+            print(f"Thumbnail generation error for {filename}: {e}")
+            thumbnail_generation_status['failed'] += 1
+
+        thumbnail_generation_status['processed'] += 1
+
+        # Small delay to prevent blocking
+        import eventlet
+        eventlet.sleep(0.01)
+
+    thumbnail_generation_status['running'] = False
+    thumbnail_generation_status['current_file'] = ''
+
 
 # --- WebSocket Handlers ---
 
