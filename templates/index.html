@@ -85,6 +85,27 @@
                 </div>
             </div>
 
+            <!-- Thumbnail Generation Section -->
+            <div style="margin-top:25px; padding-top:20px; border-top:1px solid var(--glass-border);">
+                <h3 style="margin-top:0; margin-bottom:15px; font-size:16px;">Thumbnail Management</h3>
+                <div id="thumbnail-status" style="margin-bottom:15px;">
+                    <span style="opacity:0.7;">Checking thumbnail status...</span>
+                </div>
+                <div id="thumbnail-progress" style="display:none; margin-bottom:15px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                        <span id="thumbnail-progress-text">Generating...</span>
+                        <span id="thumbnail-progress-count">0/0</span>
+                    </div>
+                    <div style="background:rgba(0,0,0,0.3); border-radius:4px; height:8px; overflow:hidden;">
+                        <div id="thumbnail-progress-bar" style="background:var(--accent-color); height:100%; width:0%; transition:width 0.3s;"></div>
+                    </div>
+                    <div id="thumbnail-current-file" style="font-size:12px; opacity:0.5; margin-top:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></div>
+                </div>
+                <button id="generate-thumbnails-btn" class="btn" style="display:none;">
+                    Generate Missing Thumbnails
+                </button>
+            </div>
+
             <div style="margin-top:20px; text-align:right;">
                 <button id="save-settings-btn" class="btn btn-primary">Save Changes</button>
             </div>

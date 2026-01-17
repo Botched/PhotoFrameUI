@@ -140,6 +140,117 @@ function updateSleepUI() {
     times.style.pointerEvents = enabled ? 'auto' : 'none';
 }
 
+// --- Thumbnail Generation ---
+let thumbnailPollInterval = null;
+
+async function checkThumbnailStatus() {
+    const statusEl = document.getElementById('thumbnail-status');
+    const progressEl = document.getElementById('thumbnail-progress');
+    const generateBtn = document.getElementById('generate-thumbnails-btn');
+
+    try {
+        const res = await fetch('/api/thumbnails/status');
+        const data = await res.json();
+
+        if (data.generation.running) {
+            // Show progress
+            statusEl.style.display = 'none';
+            progressEl.style.display = 'block';
+            generateBtn.style.display = 'none';
+            updateThumbnailProgress(data.generation);
+            startThumbnailPolling();
+        } else if (data.missing > 0) {
+            // Show status with generate button
+            statusEl.innerHTML = `<span style="color:#f59e0b;">⚠️ ${data.missing} of ${data.total} photos missing thumbnails</span>`;
+            statusEl.style.display = 'block';
+            progressEl.style.display = 'none';
+            generateBtn.style.display = 'inline-flex';
+            generateBtn.innerText = `Generate ${data.missing} Missing Thumbnails`;
+            stopThumbnailPolling();
+        } else {
+            // All good
+            statusEl.innerHTML = `<span style="color:#4ade80;">✓ All ${data.total} photos have thumbnails</span>`;
+            statusEl.style.display = 'block';
+            progressEl.style.display = 'none';
+            generateBtn.style.display = 'none';
+            stopThumbnailPolling();
+        }
+    } catch (e) {
+        statusEl.innerHTML = '<span style="color:#f87171;">Failed to check thumbnail status</span>';
+        console.error('Thumbnail status error:', e);
+    }
+}
+
+function updateThumbnailProgress(gen) {
+    const progressText = document.getElementById('thumbnail-progress-text');
+    const progressCount = document.getElementById('thumbnail-progress-count');
+    const progressBar = document.getElementById('thumbnail-progress-bar');
+    const currentFile = document.getElementById('thumbnail-current-file');
+
+    const percent = gen.total > 0 ? (gen.processed / gen.total) * 100 : 0;
+
+    progressText.innerText = gen.running ? 'Generating thumbnails...' : 'Complete!';
+    progressCount.innerText = `${gen.processed}/${gen.total}`;
+    progressBar.style.width = `${percent}%`;
+    currentFile.innerText = gen.current_file || '';
+
+    if (!gen.running && gen.processed > 0) {
+        progressText.innerHTML = `<span style="color:#4ade80;">✓ Complete!</span> ${gen.success} generated, ${gen.failed} failed`;
+    }
+}
+
+function startThumbnailPolling() {
+    if (thumbnailPollInterval) return;
+    thumbnailPollInterval = setInterval(checkThumbnailStatus, 1000);
+}
+
+function stopThumbnailPolling() {
+    if (thumbnailPollInterval) {
+        clearInterval(thumbnailPollInterval);
+        thumbnailPollInterval = null;
+    }
+}
+
+async function startThumbnailGeneration() {
+    const generateBtn = document.getElementById('generate-thumbnails-btn');
+    const statusEl = document.getElementById('thumbnail-status');
+    const progressEl = document.getElementById('thumbnail-progress');
+
+    generateBtn.innerText = 'Starting...';
+    generateBtn.disabled = true;
+
+    try {
+        const res = await fetch('/api/thumbnails/generate', { method: 'POST' });
+        const data = await res.json();
+
+        if (data.error) {
+            alert(data.error);
+            generateBtn.disabled = false;
+            checkThumbnailStatus();
+            return;
+        }
+
+        // Show progress UI
+        statusEl.style.display = 'none';
+        progressEl.style.display = 'block';
+        generateBtn.style.display = 'none';
+
+        // Start polling for progress
+        startThumbnailPolling();
+    } catch (e) {
+        alert('Failed to start thumbnail generation');
+        generateBtn.disabled = false;
+        console.error('Thumbnail generation error:', e);
+    }
+}
+
+function setupThumbnailGeneration() {
+    const generateBtn = document.getElementById('generate-thumbnails-btn');
+    if (generateBtn) {
+        generateBtn.addEventListener('click', startThumbnailGeneration);
+    }
+}
+
 function setupSettingsUI() {
     const btn = document.getElementById('settings-btn');
     const panel = document.getElementById('settings-panel');
@@ -147,10 +258,17 @@ function setupSettingsUI() {
     const sleepCheck = document.getElementById('setting-sleep-enabled');
 
     btn.addEventListener('click', () => {
-        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        const isOpening = panel.style.display === 'none';
+        panel.style.display = isOpening ? 'block' : 'none';
+        if (isOpening) {
+            checkThumbnailStatus();
+        }
     });
 
     sleepCheck.addEventListener('change', updateSleepUI);
+
+    // Thumbnail generation
+    setupThumbnailGeneration();
 
     saveBtn.addEventListener('click', async () => {
         saveBtn.innerText = "Saving...";
