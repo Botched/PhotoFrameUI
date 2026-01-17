@@ -399,6 +399,29 @@ body.frame-mode {
 }
 
 /* Mobile Viewport Updates */
+/* Lazy Loading States */
+.photo-card img.lazy {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    background: linear-gradient(
+        90deg,
+        rgba(255,255,255,0.03) 0%,
+        rgba(255,255,255,0.08) 50%,
+        rgba(255,255,255,0.03) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+.photo-card img.loaded {
+    opacity: 1;
+}
+
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
 @media (max-width: 768px) {
     .container {
         padding: 15px;

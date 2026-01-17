@@ -4,16 +4,14 @@ let settings = null;
 let container = document.getElementById('frame-container');
 let sleepOverlay = document.getElementById('sleep-overlay');
 let loopTimeout = null;
-let lastPhotoFetch = 0;
+let socket = null;
 
 // Initialize
 (async function init() {
-    await refreshData();
+    await initializeWebSocket();
     startLoop();
-    
-    // Refresh data every minute
-    setInterval(refreshData, 60000);
-    // Check sleep every minute
+
+    // Check sleep every minute (local time check doesn't need server)
     setInterval(checkSleep, 60000);
 
     // Tap to advance
@@ -24,23 +22,92 @@ let lastPhotoFetch = 0;
     });
 })();
 
-async function refreshData() {
+function initializeWebSocket() {
+    return new Promise((resolve) => {
+        socket = io('/frame', {
+            transports: ['websocket', 'polling'],
+            reconnection: true,
+            reconnectionAttempts: Infinity,
+            reconnectionDelay: 1000,
+            reconnectionDelayMax: 5000
+        });
+
+        socket.on('connect', () => {
+            console.log('Connected to server via WebSocket');
+            socket.emit('request_sync');
+        });
+
+        socket.on('full_sync', (data) => {
+            console.log('Received full sync:', data.photos?.length, 'photos');
+            photos = data.photos || [];
+            settings = data.settings || {};
+            checkSleep();
+            resolve();
+        });
+
+        socket.on('photos_changed', () => {
+            console.log('Photos changed, requesting sync');
+            socket.emit('request_sync');
+        });
+
+        socket.on('settings_changed', () => {
+            console.log('Settings changed, requesting sync');
+            socket.emit('request_sync');
+        });
+
+        socket.on('disconnect', () => {
+            console.log('Disconnected from server');
+        });
+
+        socket.on('connect_error', (err) => {
+            console.error('WebSocket connection error:', err);
+            // Fallback to polling if WebSocket fails
+            if (!photos.length) {
+                console.log('Falling back to HTTP polling');
+                fallbackFetch().then(resolve);
+            }
+        });
+
+        // Timeout fallback in case WebSocket doesn't connect
+        setTimeout(() => {
+            if (!photos.length) {
+                console.log('WebSocket timeout, falling back to HTTP');
+                fallbackFetch().then(resolve);
+            }
+        }, 5000);
+    });
+}
+
+async function fallbackFetch() {
+    // Fallback to traditional fetch if WebSocket unavailable
     try {
         const [pRes, sRes] = await Promise.all([
             fetch('/api/photos'),
             fetch('/api/settings')
         ]);
-        
+
         const allPhotos = await pRes.json();
-        // Filter only active photos
         photos = allPhotos.filter(p => p.active);
-        
         settings = await sRes.json();
-        
-        // Update basic styles if needed
         checkSleep();
-    } catch(e) {
-        console.error("Sync failed", e);
+
+        // Set up polling fallback
+        setInterval(async () => {
+            try {
+                const [pRes, sRes] = await Promise.all([
+                    fetch('/api/photos'),
+                    fetch('/api/settings')
+                ]);
+                const allPhotos = await pRes.json();
+                photos = allPhotos.filter(p => p.active);
+                settings = await sRes.json();
+                checkSleep();
+            } catch (e) {
+                console.error("Polling sync failed", e);
+            }
+        }, 60000);
+    } catch (e) {
+        console.error("Fallback fetch failed", e);
     }
 }
 
@@ -95,7 +162,7 @@ function showNextPhoto() {
     // Create new image
     const img = document.createElement('img');
     img.src = `/static/uploads/${photo.filename}`;
-    
+
     // Apply transition class
     const transitionType = settings?.transition || 'fade';
     let transitionClass = '';
@@ -104,19 +171,19 @@ function showNextPhoto() {
     else if (transitionType === 'blur') transitionClass = 'tx-blur';
     else if (transitionType === 'flip') transitionClass = 'tx-flip';
     else if (transitionType === 'revolve') transitionClass = 'tx-revolve';
-                          
+
     img.className = `frame-image ${transitionClass}`;
-    
+
     // Preload
     img.onload = () => {
         container.appendChild(img);
-        
+
         // Trigger reflow
-        img.offsetHeight; 
-        
+        img.offsetHeight;
+
         // Animate in
         img.classList.add('active');
-        
+
         // Clean up old images: Transition them OUT while new one comes IN
         const oldImages = container.querySelectorAll('.frame-image:not(:last-child)');
         oldImages.forEach(el => {
@@ -127,7 +194,7 @@ function showNextPhoto() {
         setTimeout(() => {
             oldImages.forEach(el => el.remove());
         }, 1000); // 1s transition duration matches CSS
-        
+
         // Schedule next
         const duration = (settings?.rotation_speed || 10) * 1000;
         loopTimeout = setTimeout(showNextPhoto, duration);
