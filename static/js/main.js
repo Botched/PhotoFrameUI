@@ -22,9 +22,18 @@ function setupLazyLoading() {
                 if (entry.isIntersecting) {
                     const img = entry.target;
                     const src = img.dataset.src;
+                    const fallback = img.dataset.fallback;
                     if (src) {
+                        // Set up fallback handler before setting src
+                        if (fallback) {
+                            img.onerror = () => {
+                                img.onerror = null;
+                                img.src = fallback;
+                            };
+                        }
                         img.src = src;
                         img.removeAttribute('data-src');
+                        img.removeAttribute('data-fallback');
                         img.classList.remove('lazy');
                         img.classList.add('loaded');
                     }
@@ -337,13 +346,16 @@ function renderGallery() {
             // Append a timestamp to force browser to reload image after rotation
             const t = photo.added ? `?t=${photo.added}` : '';
             const disabledLabel = !photo.active ? '<div class="disabled-label">DISABLED</div>' : '';
-            const imgSrc = `/static/uploads/${photo.filename}${t}`;
+
+            // Use thumbnail for gallery display, fallback to original if thumbnail fails
+            const thumbSrc = `/static/thumbnails/${photo.filename}${t}`;
+            const fallbackSrc = `/static/uploads/${photo.filename}${t}`;
 
             // Use lazy loading with Intersection Observer if available
             const placeholder = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E";
             const imgHtml = imageObserver
-                ? `<img class="lazy" data-src="${imgSrc}" src="${placeholder}">`
-                : `<img src="${imgSrc}" loading="lazy">`;
+                ? `<img class="lazy" data-src="${thumbSrc}" data-fallback="${fallbackSrc}" src="${placeholder}">`
+                : `<img src="${thumbSrc}" onerror="this.onerror=null; this.src='${fallbackSrc}'" loading="lazy">`;
 
             card.innerHTML = `
                 ${imgHtml}
