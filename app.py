@@ -745,4 +745,6 @@ def handle_sync_request():
 
 if __name__ == '__main__':
     # Run on all interfaces so it's accessible on network
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+    # Debug mode off by default (production). Set FLASK_DEBUG=1 for development.
+    debug_mode = os.environ.get('FLASK_DEBUG', '0') == '1'
+    socketio.run(app, host='0.0.0.0', port=5000, debug=debug_mode)
