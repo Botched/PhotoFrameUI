@@ -21,15 +21,23 @@ os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = os.path.join('static', 'uploads')
+app.config['THUMBNAIL_FOLDER'] = os.path.join('static', 'thumbnails')
 app.config['DATA_FOLDER'] = 'data'
 app.config['MAX_CONTENT_LENGTH'] = 32 * 1024 * 1024  # 32MB max upload
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'photo-frame-secret-key')
+
+# Image processing settings
+MAX_IMAGE_DIMENSION = 1920  # Max width or height for uploaded images
+JPEG_QUALITY = 85  # Compression quality for uploads
+THUMBNAIL_SIZE = (300, 300)  # Max thumbnail dimensions
+THUMBNAIL_QUALITY = 80  # Compression quality for thumbnails
 
 # Initialize SocketIO
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 
 # Ensure directories exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+os.makedirs(app.config['THUMBNAIL_FOLDER'], exist_ok=True)
 os.makedirs(app.config['DATA_FOLDER'], exist_ok=True)
 
 SETTINGS_FILE = os.path.join(app.config['DATA_FOLDER'], 'settings.json')
@@ -75,6 +83,89 @@ def save_photos_meta(meta):
 def broadcast_update(event_type, data=None):
     """Broadcast update to all connected frame clients."""
     socketio.emit(event_type, data or {}, namespace='/frame')
+
+
+# --- Image Processing ---
+
+def compress_image(input_path, output_path=None):
+    """
+    Compress and resize image to reasonable dimensions.
+    Preserves EXIF orientation. Returns output path.
+    """
+    from PIL import Image, ImageOps
+
+    if output_path is None:
+        output_path = input_path
+
+    try:
+        with Image.open(input_path) as img:
+            # Preserve EXIF orientation
+            img = ImageOps.exif_transpose(img)
+
+            # Calculate new dimensions if needed
+            width, height = img.size
+            if width > MAX_IMAGE_DIMENSION or height > MAX_IMAGE_DIMENSION:
+                if width > height:
+                    new_width = MAX_IMAGE_DIMENSION
+                    new_height = int(height * (MAX_IMAGE_DIMENSION / width))
+                else:
+                    new_height = MAX_IMAGE_DIMENSION
+                    new_width = int(width * (MAX_IMAGE_DIMENSION / height))
+                img = img.resize((new_width, new_height), Image.LANCZOS)
+
+            # Convert to RGB if necessary (for JPEG output)
+            if img.mode in ('RGBA', 'P'):
+                img = img.convert('RGB')
+
+            img.save(output_path, 'JPEG', quality=JPEG_QUALITY, optimize=True)
+
+        return output_path
+    except Exception as e:
+        print(f"Compression failed: {e}")
+        return input_path
+
+
+def generate_thumbnail(source_path, filename):
+    """
+    Generate a thumbnail for the given image.
+    Returns relative path to thumbnail or None on failure.
+    """
+    from PIL import Image, ImageOps
+
+    thumb_folder = app.config['THUMBNAIL_FOLDER']
+    thumb_rel_path = filename.replace('/', os.sep)
+    thumb_full_path = os.path.join(thumb_folder, thumb_rel_path)
+
+    # Ensure directory exists
+    thumb_dir = os.path.dirname(thumb_full_path)
+    if thumb_dir:
+        os.makedirs(thumb_dir, exist_ok=True)
+
+    try:
+        with Image.open(source_path) as img:
+            img = ImageOps.exif_transpose(img)
+            img.thumbnail(THUMBNAIL_SIZE, Image.LANCZOS)
+
+            if img.mode in ('RGBA', 'P'):
+                img = img.convert('RGB')
+
+            img.save(thumb_full_path, 'JPEG', quality=THUMBNAIL_QUALITY, optimize=True)
+
+        return filename
+    except Exception as e:
+        print(f"Thumbnail generation failed for {filename}: {e}")
+        return None
+
+
+def delete_thumbnail(filename):
+    """Delete thumbnail for given filename if it exists."""
+    thumb_path = os.path.join(app.config['THUMBNAIL_FOLDER'], filename)
+    if os.path.exists(thumb_path):
+        try:
+            os.remove(thumb_path)
+        except Exception as e:
+            print(f"Failed to delete thumbnail {filename}: {e}")
+
 
 def sync_photos():
     """Scan upload folder recursively and sync with metadata"""
@@ -156,11 +247,21 @@ def upload_file():
              base, ext = os.path.splitext(filename)
              unique_name = f"{base}_{uuid.uuid4().hex[:6]}{ext}"
         
-        file.save(os.path.join(target_dir, unique_name))
-        
+        saved_path = os.path.join(target_dir, unique_name)
+        file.save(saved_path)
+
+        # Compress image
+        try:
+            compress_image(saved_path)
+        except Exception as e:
+            print(f"Compression failed for {unique_name}: {e}")
+
         # Determine stored path key
         stored_key = os.path.join(safe_rel_path, unique_name).replace('\\', '/')
-        
+
+        # Generate thumbnail
+        generate_thumbnail(saved_path, stored_key)
+
         # Update meta
         meta = load_photos_meta()
         meta[stored_key] = {
@@ -170,7 +271,7 @@ def upload_file():
             "added": time.time()
         }
         save_photos_meta(meta)
-        
+
         return jsonify({'success': True, 'filename': stored_key})
 
 @app.route('/api/photo/<path:filename>', methods=['DELETE'])
@@ -186,12 +287,15 @@ def delete_photo(filename):
     
     if os.path.exists(target_path):
         os.remove(target_path)
-        
+
+    # Also delete thumbnail
+    delete_thumbnail(filename)
+
     meta = load_photos_meta()
     if filename in meta:
         del meta[filename]
         save_photos_meta(meta)
-        
+
     return jsonify({'success': True})
 
 @app.route('/api/folder/delete', methods=['POST'])
@@ -216,10 +320,15 @@ def delete_folder():
     if os.path.exists(target_path):
         import shutil
         shutil.rmtree(target_path)
-    
+
+    # Also delete corresponding thumbnails folder
+    thumb_folder_path = os.path.join(app.config['THUMBNAIL_FOLDER'], safe_rel_path)
+    if os.path.exists(thumb_folder_path):
+        shutil.rmtree(thumb_folder_path)
+
     # Sync will clean up metadata
     sync_photos()
-    
+
     return jsonify({'success': True})
 
 @app.route('/api/batch/move', methods=['POST'])
@@ -388,7 +497,16 @@ def google_import():
                 with open(save_path, 'wb') as f:
                     for chunk in r.iter_content(1024):
                         f.write(chunk)
-                
+
+                # Compress image
+                try:
+                    compress_image(save_path)
+                except Exception as e:
+                    print(f"Compression failed for {unique_name}: {e}")
+
+                # Generate thumbnail
+                generate_thumbnail(save_path, unique_name)
+
                 # Update meta
                 meta = load_photos_meta()
                 meta[unique_name] = {
