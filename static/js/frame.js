@@ -1,5 +1,7 @@
 let photos = [];
 let currentIndex = -1;
+let shuffledIndices = [];
+let shufflePosition = -1;
 let settings = null;
 let container = document.getElementById('frame-container');
 let sleepOverlay = document.getElementById('sleep-overlay');
@@ -149,6 +151,36 @@ function startLoop() {
     showNextPhoto();
 }
 
+function shuffleArray(length) {
+    // Create array of indices and shuffle using Fisher-Yates
+    const arr = Array.from({ length }, (_, i) => i);
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+}
+
+function getNextIndex() {
+    if (settings?.shuffle && photos.length > 1) {
+        // Shuffle mode: use shuffled indices
+        if (shuffledIndices.length !== photos.length) {
+            // Photos changed, reshuffle
+            shuffledIndices = shuffleArray(photos.length);
+            shufflePosition = -1;
+        }
+        shufflePosition = (shufflePosition + 1) % photos.length;
+        if (shufflePosition === 0 && currentIndex !== -1) {
+            // Completed a cycle, reshuffle for next round
+            shuffledIndices = shuffleArray(photos.length);
+        }
+        return shuffledIndices[shufflePosition];
+    } else {
+        // Sequential mode
+        return (currentIndex + 1) % photos.length;
+    }
+}
+
 function showNextPhoto() {
     if (photos.length === 0) {
         container.innerHTML = '<h1 style="color:white; opacity:0.5;">No Photos Available</h1>';
@@ -156,7 +188,7 @@ function showNextPhoto() {
         return;
     }
 
-    currentIndex = (currentIndex + 1) % photos.length;
+    currentIndex = getNextIndex();
     const photo = photos[currentIndex];
 
     // Create new image

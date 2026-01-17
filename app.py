@@ -56,6 +56,7 @@ PHOTOS_META_FILE = os.path.join(app.config['DATA_FOLDER'], 'photos.json')
 DEFAULT_SETTINGS = {
     "rotation_speed": 10,  # seconds
     "transition": "fade",
+    "shuffle": False,
     "sleep_enabled": False,
     "sleep_start": "22:00",
     "sleep_end": "08:00"

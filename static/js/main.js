@@ -122,14 +122,15 @@ async function loadPhotos() {
 
 async function loadSettings() {
     currentSettings = await fetchSettings();
-    
+
     // Populate form
     document.getElementById('setting-rotation').value = currentSettings.rotation_speed;
     document.getElementById('setting-transition').value = currentSettings.transition;
+    document.getElementById('setting-shuffle').checked = currentSettings.shuffle;
     document.getElementById('setting-sleep-enabled').checked = currentSettings.sleep_enabled;
     document.getElementById('setting-sleep-start').value = currentSettings.sleep_start;
     document.getElementById('setting-sleep-end').value = currentSettings.sleep_end;
-    
+
     updateSleepUI();
 }
 
@@ -275,6 +276,7 @@ function setupSettingsUI() {
         const newSettings = {
             rotation_speed: parseInt(document.getElementById('setting-rotation').value),
             transition: document.getElementById('setting-transition').value,
+            shuffle: document.getElementById('setting-shuffle').checked,
             sleep_enabled: document.getElementById('setting-sleep-enabled').checked,
             sleep_start: document.getElementById('setting-sleep-start').value,
             sleep_end: document.getElementById('setting-sleep-end').value
