@@ -1,7 +1,9 @@
 import os
+import stat
 import json
 import time
 import uuid
+import tempfile
 from flask import Flask, render_template, request, jsonify, send_from_directory
 from flask_socketio import SocketIO, emit
 from werkzeug.utils import secure_filename
@@ -72,9 +74,33 @@ def load_settings():
     except:
         return DEFAULT_SETTINGS
 
+def atomic_write_json(path, data):
+    """Write JSON atomically: temp file in the same directory, fsync, then replace."""
+    directory = os.path.dirname(os.path.abspath(path))
+    fd, tmp_path = tempfile.mkstemp(dir=directory, prefix='.tmp-', suffix='.json')
+    try:
+        with os.fdopen(fd, 'w') as f:
+            json.dump(data, f, indent=4)
+            f.flush()
+            os.fsync(f.fileno())
+        # mkstemp creates 0600; match the target's mode (or a normal open()'s).
+        try:
+            mode = stat.S_IMODE(os.stat(path).st_mode)
+        except FileNotFoundError:
+            current_umask = os.umask(0)
+            os.umask(current_umask)
+            mode = 0o666 & ~current_umask
+        os.chmod(tmp_path, mode)
+        os.replace(tmp_path, path)
+    except BaseException:
+        try:
+            os.remove(tmp_path)
+        except OSError:
+            pass
+        raise
+
 def save_settings(settings):
-    with open(SETTINGS_FILE, 'w') as f:
-        json.dump(settings, f, indent=4)
+    atomic_write_json(SETTINGS_FILE, settings)
     broadcast_update('settings_changed')
 
 def load_photos_meta():
@@ -87,8 +113,7 @@ def load_photos_meta():
         return {}
 
 def save_photos_meta(meta):
-    with open(PHOTOS_META_FILE, 'w') as f:
-        json.dump(meta, f, indent=4)
+    atomic_write_json(PHOTOS_META_FILE, meta)
     broadcast_update('photos_changed')
 
 def broadcast_update(event_type, data=None):
@@ -196,12 +221,14 @@ def sync_photos():
 
     # 2. Remove metadata for missing files
     keys_to_remove = [k for k in meta if k not in files_on_disk]
+    changed = bool(keys_to_remove)
     for k in keys_to_remove:
         del meta[k]
         
     # 3. Add new files
     for f in files_on_disk:
         if f not in meta:
+            changed = True
             folder = os.path.dirname(f)
             meta[f] = {
                 "filename": f,
@@ -210,7 +237,8 @@ def sync_photos():
                 "added": time.time()
             }
             
-    save_photos_meta(meta)
+    if changed:
+        save_photos_meta(meta)
     return meta
 
 @app.route('/')
